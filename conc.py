@@ -1,6 +1,7 @@
+from wsgiref import validate
 import pandas as pd 
 from config import path
-from dics import gcons, f12_vars, f3_vars, f11_vars, nc_vars, siebel_vars, ro_vars, mc_vars, en_vars, q_vars
+from dics import gcons, f12_vars, f3_vars, f11_vars, nc_vars, siebel_vars, ro_vars, mc_vars, en_vars, q_vars, siebel_vars
 from os import listdir
 from unidecode import unidecode
 
@@ -44,6 +45,36 @@ class CONC:
     def get_dfs(self):
         return self.dfs 
 
+    def f12_classifier(self):
+        df = self.dfs[2].copy()
+
+        val_entregas = df[~f3_vars['key']].isna() | ~df[f11_vars['key']].isna() | ~df[mc_vars['key']].isna() | ~df[en_vars['key']].isna() | ~df[q_vars['key']].isna()
+        df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
+
+        df.loc[~df[siebel_vars['key']].isna() , 'gco_ind_ss_n3'] = 'Tiene SS' #TODO validar que ss sea nivel 3
+
+        total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
+
+        # ENTREGA ADMINISTRATIVA
+        te_ent_admin = get_id_values(df, f12_vars['key'], f12_vars['subestado'], ['ENTREGA ADMINISTRATIVO'], total_entrega)
+        mts_val = ['EN PROCESO NC', 'ENTREGADO EN TIENDA', 'FALTA STOCK', 'RETORNADO A ORIGEN', 'REFACTURACION', 'PROD CON NCRD']
+        te_ea_mts = get_id_values(df, f12_vars['key'], f12_vars['mt'], mts_val, te_ent_admin)
+
+        # ENTREGAS         
+        entregas = ['ENTREGA POR PDA', 'ENTREGA EN SRX', 'ENTREGA PROVEEDOR']
+        te_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], entregas, total_entrega)
+        te_entregas_w_reg = get_id_values(df, f12_vars['key'], 'gco_ind_entregas', 'Tiene registro RO | MC | F3 | F11 | QUIEBRE', te_entregas)
+    
+        # NO ENTREGAS 
+        no_entregas = [ 'ENTREGA EN TIENDA','EN LINEA PRV. CON FACTURA', 'EN LINEA PRV. PEND. FACTURA', 'TOTAL ENTREGA']
+        te_no_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], no_entregas, total_entrega)
+        te_no_entregas_w_ss3 = get_id_values(df, f12_vars['key'], 'gco_ind_ss_n3', 'Tiene SS', te_no_entregas)
+
+        # RESULTADO 
+        f12s_validos = te_ea_mts + te_entregas_w_reg + te_no_entregas_w_ss3
+        set_colvalue(df, f12_vars['key'], f12s_validos, 'gco_comment', 'Aplica conciliación')
+        return df 
+    
     def get_join(self):
         self.dfs[1]['f11_folio_f12'] = self.dfs[1]['f11_observacion'].str.extract(r'^([1][2]\d{7,})') 
         ne_ro = join(self.dfs[6], self.dfs[4], 'en_centrada', 'ro_ro') 
@@ -55,6 +86,15 @@ class CONC:
         f12_f3 = join(f12_f11, self.dfs[0], ['f12_nfolio', 'f12_prd_upc'], ['f3_folio_f12', 'f3_upc'])
         f12_q = join(f12_f3, self.dfs[7], ['f12_nfolio', 'f12_prd_upc'], ['quiebres_f12', 'quiebres_codigo_barras'])
         return f12_q
+
+def get_id_values(df, id_col, col, values, init_ids = None):
+    todos = df[id_col].unique() if init_ids == None else init_ids
+    return df.loc[df[id_col].isin(todos) &  df[col].isin(values), id_col].unique()
+
+def set_colvalue(df, id_col, ids,  comment_col, comment_value): 
+    res = df.copy()
+    res.loc[res[id_col].isin(ids), comment_col] = comment_value
+    return res
 
 def set_prefijo_df(df, prefijo): # TODO reescribir en list coprehension
     col = {}
@@ -103,5 +143,14 @@ def get_dirs(files, file_name_list): # PAP [x]
     return lista 
 
 def join(df_left, df_right, col_df_left, col_df_right):
-    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right)
+    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right, validate= 'one_to_one')
 
+def innit_commandline():
+    conc = CONC()
+    conc.load_files()
+    conc.transform_files()
+    conc.get_join()
+    conc.f12_classifier()
+
+if __name__=='__main__':
+    innit_commandline()

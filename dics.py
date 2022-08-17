@@ -26,7 +26,10 @@ f12_vars = {
     'cstring':['f12_loc_name','f12_desc_estado','f12_desc_subestado','f12_desc_mt','f12_ind_nc'],
     'ckeep':['f12_nfolio','f12_loc_id','f12_loc_name','f12_dcreacion','f12_dreparto','f12_dpactada','f12_desc_estado',
     'f12_desc_subestado','f12_desc_mt','f12_ind_nc','f12_ctipo','f12_cvendedor','f12_bretira_dsp','f12_partition_date',
-    'f12_origin','f12_prd_upc','f12_qproducto','f12_mprecio', 'f12_so']
+    'f12_origin','f12_prd_upc','f12_qproducto','f12_mprecio', 'f12_so'],
+    'estado':'f12_desc_estado',
+    'subestado':'f12_desc_subestado',
+    'mt':'f12_desc_mt'
 }
 
 f3_vars = {
