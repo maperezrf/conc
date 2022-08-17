@@ -8,7 +8,7 @@ f11_vars = {
     'cnum' : ['f11_total_costo', 'f11_cant_prod'],
     'cstring' : [ 'f11_propietario', 'f11_nombre_local', 'f11_estado', 'f11_servicio'],
     'ckeep' : ['f11_nro_f11', 'f11_fecha_creacion' ,'f11_upc', 'f11_propietario', 'f11_cod_local', 
-    'f11_nombre_local', 'f11_grupo', 'f11_estado', 'f11_servicio','f11_cant_prod', 'f11_total_costo' ]
+    'f11_nombre_local', 'f11_grupo', 'f11_estado', 'f11_servicio','f11_cant_prod', 'f11_total_costo','f11_observacion' ]
 }
 
 nc_vars = {
@@ -16,7 +16,7 @@ nc_vars = {
     'dkeys':['nc_cautoriza_nc', 'nc_sku'],
     'cnum':['nc_qcantidad', 'nc_monto_sku_nc'],
     'cstring':['nc_estado_nc', 'nc_local_v_nc'],
-    'ckeep':['nc_cautoriza_nc', 'nc_sku', 'nc_qcantidad', 'nc_monto_sku_nc', 'nc_estado_nc', 'nc_local_v_nc' ]
+    'ckeep':['nc_cautoriza_nc', 'nc_sku', 'nc_qcantidad', 'nc_monto_sku_nc', 'nc_estado_nc', 'nc_local_v_nc', 'nc_nfolio', 'nc_prod_ean_id']
 }
 
 f12_vars = {
@@ -40,7 +40,7 @@ f3_vars = {
 }
 
 siebel_vars = {
-    'key': 'ss_ss',
+    'key': 'ss_suborden',
     'dkeys':['ss_suborden'],
     'cnum':[],
     'cstring':[],
@@ -61,7 +61,7 @@ q_vars = {
     'dkeys' : ['quiebres_f12', 'quiebres_sku', 'quiebres_cantidad_cancelada'],
     'cnum' : ['quiebres_cost_unit_prod', 'quiebres_cantidad_cancelada'],
     'cstring': ['quiebres_tipo_quiebre'],
-    'ckeep' : ['quiebres_f12', 'quiebres_sku', 'quiebres_cantidad_cancelada', 'quiebres_cost_unit_prod', 'quiebres_tipo_quiebre']
+    'ckeep' : ['quiebres_f12', 'quiebres_sku', 'quiebres_cantidad_cancelada', 'quiebres_cost_unit_prod', 'quiebres_tipo_quiebre', 'quiebres_codigo_barras']
 }
 
 ro_vars = {
@@ -79,4 +79,3 @@ en_vars = {
     'cstring':['en_darticul' ],
     'ckeep':[ 'en_centrada','en_fcreareg', 'en_creferen', 'en_darticul',  'en_qcantida']
 }
-

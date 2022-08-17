@@ -44,6 +44,18 @@ class CONC:
     def get_dfs(self):
         return self.dfs 
 
+    def get_join(self):
+        self.dfs[1]['f11_folio_f12'] = self.dfs[1]['f11_observacion'].str.extract(r'^([1][2]\d{7,})') 
+        ne_ro = join(self.dfs[6], self.dfs[4], 'en_centrada', 'ro_ro') 
+        f12_nc = join(self.dfs[2], self.dfs[3], ['f12_nfolio', 'f12_prd_upc'], ['nc_nfolio','nc_prod_ean_id'])
+        f12_ss = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden') # TODO No se encuentran coincidencias.
+        f12_ro = join(f12_ss, ne_ro, ['f12_nfolio', 'f12_prd_upc'] , ['ro_do_inicial', 'ro_upc'])
+        f12_mc = join(f12_ro, self.dfs[5], 'f12_nfolio' , 'mc_entrada')
+        f12_f11 = join(f12_mc, self.dfs[1], ['f12_nfolio', 'f12_prd_upc'] , ['f11_folio_f12', 'f11_upc'])
+        f12_f3 = join(f12_f11, self.dfs[0], ['f12_nfolio', 'f12_prd_upc'], ['f3_folio_f12', 'f3_upc'])
+        f12_q = join(f12_f3, self.dfs[7], ['f12_nfolio', 'f12_prd_upc'], ['quiebres_f12', 'quiebres_codigo_barras'])
+        return f12_q
+
 def set_prefijo_df(df, prefijo): # TODO reescribir en list coprehension
     col = {}
     for i in df.columns:
@@ -89,3 +101,7 @@ def get_dirs(files, file_name_list): # PAP [x]
         else: 
             lista.append('')
     return lista 
+
+def join(df_left, df_right, col_df_left, col_df_right):
+    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right)
+
