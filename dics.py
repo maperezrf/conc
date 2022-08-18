@@ -4,7 +4,7 @@ gcons = {
 
 f11_vars = {
     'key': 'f11_nro_f11',
-    'dkeys' : ['f11_nro_f11', 'f11_upc'],
+    'dkeys' : ['f11_nro_f11', 'f11_upc'], # TODO: validar duplicidad debería ser por F12 y UPC 
     'cnum' : ['f11_total_costo', 'f11_cant_prod'],
     'cstring' : [ 'f11_propietario', 'f11_nombre_local', 'f11_estado', 'f11_servicio'],
     'ckeep' : ['f11_nro_f11', 'f11_fecha_creacion' ,'f11_upc', 'f11_propietario', 'f11_cod_local', 
@@ -13,7 +13,7 @@ f11_vars = {
 
 nc_vars = {
     'key':'nc_cautoriza_nc',
-    'dkeys':['nc_cautoriza_nc', 'nc_sku'],
+    'dkeys':['nc_nfolio', 'nc_prod_ean_id'], # TODO: validar duplicidad debería ser por F12 y UPC 
     'cnum':['nc_qcantidad', 'nc_monto_sku_nc'],
     'cstring':['nc_estado_nc', 'nc_local_v_nc'],
     'ckeep':['nc_cautoriza_nc', 'nc_sku', 'nc_qcantidad', 'nc_monto_sku_nc', 'nc_estado_nc', 'nc_local_v_nc', 'nc_nfolio', 'nc_prod_ean_id']
@@ -23,7 +23,7 @@ f12_vars = {
     'key':'f12_nfolio',
     'dkeys':['f12_nfolio', 'f12_prd_upc'],
     'cnum':['f12_qproducto','f12_mprecio'],
-    'cstring':['f12_loc_name','f12_desc_estado','f12_desc_subestado','f12_desc_mt','f12_ind_nc'],
+    'cstring':['f12_loc_name','f12_desc_estado','f12_desc_subestado','f12_desc_mt','f12_ind_nc', 'f12_so'],
     'ckeep':['f12_nfolio','f12_loc_id','f12_loc_name','f12_dcreacion','f12_dreparto','f12_dpactada','f12_desc_estado',
     'f12_desc_subestado','f12_desc_mt','f12_ind_nc','f12_ctipo','f12_cvendedor','f12_bretira_dsp','f12_partition_date',
     'f12_origin','f12_prd_upc','f12_qproducto','f12_mprecio', 'f12_so'],
@@ -34,7 +34,7 @@ f12_vars = {
 
 f3_vars = {
     'key': 'f3_nro_devolucion',
-    'dkeys':['f3_nro_devolucion', 'f3_upc'],
+    'dkeys':['f3_folio_f12', 'f3_upc'],# TODO: validar duplicidad debería ser por F12 y UPC 
     'cnum':['f3_cantidad',  'f3_cant*costoprmd'],
     'cstring':['f3_nro_devolucion', 'f3_tipo_producto', 'f3_upc', 'f3_sku', 'f3_descripcion', 'f3_local', 'f3_descripcion5', 'f3_estado', 'f3_descripcion6','f3_folio_f12'],
     'ckeep':['f3_nro_devolucion', 'f3_fecha_reserva', 'f3_fecha_envio', 'f3_fecha_anulacion', 
@@ -46,7 +46,7 @@ siebel_vars = {
     'key': 'ss_suborden',
     'dkeys':['ss_suborden'],
     'cnum':[],
-    'cstring':[],
+    'cstring':['ss_suborden'],
     'ckeep':['ss_ss','ss_n1','ss_n2','ss_n3','ss_tipo','ss_estado','ss_subestado','ss_fecha_creacion','ss_fecha_solucion','ss_fecha_cierre',
     'ss_tienda_origen','ss_orden_compra','ss_suborden','ss_num_f12','ss_area_problema','ss_sucursal_creador','ss_descripcion','ss_solucion']
 }

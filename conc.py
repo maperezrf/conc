@@ -1,3 +1,4 @@
+from operator import index
 from wsgiref import validate
 import pandas as pd 
 from config import path
@@ -13,8 +14,24 @@ class CONC:
         dcorte = '220816' #TODO input('Ingrese corte: ')
         self.path = path + '/'+ dcorte 
         files = listdir(self.path)
-        self.file_name_list = ['f3', 'f11', 'f12', 'nc', 'ro', 'mc', 'en', 'quiebres', 'siebel']
+        self.file_name_list = ['f3', 'f11', 'f12', 'nc', 'ro', 'mc', 'en', 'quiebres', 'ss']
         self.file_name_dirs = get_dirs(files, self.file_name_list)
+
+    def run(self):
+        # Run 
+        print('Cargando archivos ...')
+        self.load_files()
+        print('Transformando archivos ...')
+        self.transform_files()
+        print('Realizando uniones ...')
+        self.res = self.get_join()
+        print('Clasificando archivos ...')
+        df = self.f12_classifier()
+        print('Guardando archivos ...')
+        df.to_csv('220817_resultado.csv', sep=';', index=False)
+        df.to_csv('220817_resultado_v2.csv', index=False)
+        print('Finalizado')
+
 
     def load_files(self):
         self.dfs = []
@@ -46,12 +63,12 @@ class CONC:
         return self.dfs 
 
     def f12_classifier(self):
-        df = self.dfs[2].copy()
+        df = self.res.copy()
 
-        val_entregas = df[~f3_vars['key']].isna() | ~df[f11_vars['key']].isna() | ~df[mc_vars['key']].isna() | ~df[en_vars['key']].isna() | ~df[q_vars['key']].isna()
+        val_entregas = df[f3_vars['key']].notna() | df[f11_vars['key']].notna() | df[mc_vars['key']].notna() | df[en_vars['key']].notna() | df[q_vars['key']].notna()
         df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
 
-        df.loc[~df[siebel_vars['key']].isna() , 'gco_ind_ss_n3'] = 'Tiene SS' #TODO validar que ss sea nivel 3
+        df.loc[df[siebel_vars['key']].notna() , 'gco_ind_ss_n3'] = 'Tiene SS' #TODO validar que ss sea nivel 3
 
         total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
 
@@ -63,33 +80,38 @@ class CONC:
         # ENTREGAS         
         entregas = ['ENTREGA POR PDA', 'ENTREGA EN SRX', 'ENTREGA PROVEEDOR']
         te_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], entregas, total_entrega)
-        te_entregas_w_reg = get_id_values(df, f12_vars['key'], 'gco_ind_entregas', 'Tiene registro RO | MC | F3 | F11 | QUIEBRE', te_entregas)
+        te_entregas_w_reg = get_id_values(df, f12_vars['key'], 'gco_ind_entregas', ['Tiene registro RO | MC | F3 | F11 | QUIEBRE'], te_entregas)
     
         # NO ENTREGAS 
         no_entregas = [ 'ENTREGA EN TIENDA','EN LINEA PRV. CON FACTURA', 'EN LINEA PRV. PEND. FACTURA', 'TOTAL ENTREGA']
         te_no_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], no_entregas, total_entrega)
-        te_no_entregas_w_ss3 = get_id_values(df, f12_vars['key'], 'gco_ind_ss_n3', 'Tiene SS', te_no_entregas)
+        te_no_entregas_w_ss3 = get_id_values(df, f12_vars['key'], 'gco_ind_ss_n3', ['Tiene SS'], te_no_entregas)
 
         # RESULTADO 
         f12s_validos = te_ea_mts + te_entregas_w_reg + te_no_entregas_w_ss3
-        set_colvalue(df, f12_vars['key'], f12s_validos, 'gco_comment', 'Aplica conciliación')
-        return df 
+        return set_colvalue(df, f12_vars['key'], f12s_validos, 'gco_comment', 'Aplica conciliación')
     
     def get_join(self):
+
+        # Uniones previas 
         self.dfs[1]['f11_folio_f12'] = self.dfs[1]['f11_observacion'].str.extract(r'^([1][2]\d{7,})') 
-        ne_ro = join(self.dfs[6], self.dfs[4], 'en_centrada', 'ro_ro') 
-        f12_nc = join(self.dfs[2], self.dfs[3], ['f12_nfolio', 'f12_prd_upc'], ['nc_nfolio','nc_prod_ean_id'])
-        f12_ss = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden') # TODO No se encuentran coincidencias.
-        f12_ro = join(f12_ss, ne_ro, ['f12_nfolio', 'f12_prd_upc'] , ['ro_do_inicial', 'ro_upc'])
-        f12_mc = join(f12_ro, self.dfs[5], 'f12_nfolio' , 'mc_entrada')
-        f12_f11 = join(f12_mc, self.dfs[1], ['f12_nfolio', 'f12_prd_upc'] , ['f11_folio_f12', 'f11_upc'])
-        f12_f3 = join(f12_f11, self.dfs[0], ['f12_nfolio', 'f12_prd_upc'], ['f3_folio_f12', 'f3_upc'])
-        f12_q = join(f12_f3, self.dfs[7], ['f12_nfolio', 'f12_prd_upc'], ['quiebres_f12', 'quiebres_codigo_barras'])
+        self.dfs[1] = self.dfs[1].loc[~self.dfs[1]['f11_folio_f12'].isna()].reset_index(drop=True)
+        self.dfs[1].drop_duplicates(['f11_folio_f12', 'f11_upc'], inplace=True)
+        ne_ro = join( self.dfs[4], self.dfs[6],  'ro_ro', 'en_centrada', 'many_to_one') 
+
+        # Inicio 
+        f12_nc = join(self.dfs[2], self.dfs[3], ['f12_nfolio', 'f12_prd_upc'], ['nc_nfolio','nc_prod_ean_id'], 'one_to_one')
+        f12_ss = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one') # TODO No se encuentran coincidencias.
+        f12_ro = join(f12_ss, ne_ro, ['f12_nfolio', 'f12_prd_upc'] , ['ro_do_inicial', 'ro_upc'], 'one_to_one')
+        f12_mc = join(f12_ro, self.dfs[5], 'f12_nfolio' , 'mc_entrada', 'many_to_one')
+        f12_f11 = join(f12_mc, self.dfs[1], ['f12_nfolio', 'f12_prd_upc'] , ['f11_folio_f12', 'f11_upc'], 'one_to_one')
+        f12_f3 = join(f12_f11, self.dfs[0], ['f12_nfolio', 'f12_prd_upc'], ['f3_folio_f12', 'f3_upc'], 'one_to_one')
+        f12_q = join(f12_f3, self.dfs[7], ['f12_nfolio', 'f12_prd_upc'], ['quiebres_f12', 'quiebres_codigo_barras'], 'one_to_one')
         return f12_q
 
-def get_id_values(df, id_col, col, values, init_ids = None):
-    todos = df[id_col].unique() if init_ids == None else init_ids
-    return df.loc[df[id_col].isin(todos) &  df[col].isin(values), id_col].unique()
+def get_id_values(df, id_col, col, values, init_ids = []):
+    todos = df[id_col].unique() if len(init_ids) == 0 else init_ids
+    return list(df.loc[df[id_col].isin(todos) &  df[col].isin(values), id_col].unique())
 
 def set_colvalue(df, id_col, ids,  comment_col, comment_value): 
     res = df.copy()
@@ -142,15 +164,12 @@ def get_dirs(files, file_name_list): # PAP [x]
             lista.append('')
     return lista 
 
-def join(df_left, df_right, col_df_left, col_df_right):
-    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right, validate= 'one_to_one')
+def join(df_left, df_right, col_df_left, col_df_right, val_type):
+    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right, validate=val_type)
 
 def innit_commandline():
     conc = CONC()
-    conc.load_files()
-    conc.transform_files()
-    conc.get_join()
-    conc.f12_classifier()
+    conc.run()
 
 if __name__=='__main__':
     innit_commandline()
