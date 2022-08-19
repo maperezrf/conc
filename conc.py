@@ -29,8 +29,10 @@ class CONC:
         print('Clasificando archivos ...')
         df = self.f12_classifier()
         print('Guardando archivos ...')
-        df.to_csv('220817_resultado.csv', sep=';', index=False)
-        df.to_csv('220817_resultado_v2.csv', index=False)
+        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_ind_nc', 'gco_comment']
+        df.to_csv('220817_resultado_ant.csv', sep=';', index=False)
+        #df[f12_vars['ckeep']+gco_cols].to_csv('220817_resultado.csv', sep=';', index=False)
+        #df[f12_vars['ckeep']+gco_cols].to_csv('220817_resultado_v2.csv', index=False)
         print('Finalizado')
 
 
@@ -71,6 +73,8 @@ class CONC:
 
     def f12_classifier(self):
         df = self.res.copy()
+
+        df.loc[df[nc_vars['key']].notna() , 'gco_ind_nc'] = 'Tiene NC'
 
         val_entregas = df[f3_vars['key']].notna() | df[f11_vars['key']].notna() | df[mc_vars['key']].notna() | df[en_vars['key']].notna() | df[q_vars['key']].notna()
         df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
@@ -132,6 +136,7 @@ class CONC:
         f12_ss_1 = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
         ss_x_f12 = self.dfs[8].drop_duplicates(['ss_num_f12']) 
         f12_ss = f12_ss_1.merge(ss_x_f12, how = 'left', left_on = 'f12_nfolio',right_on = 'ss_num_f12', suffixes=('', '_y')) 
+        
         f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss'] ] = f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss_aux']].values
         f12_ss.drop(columns = gcons['union_ss_aux'], inplace = True) # Se eliminan columnas de segunda Base
 
