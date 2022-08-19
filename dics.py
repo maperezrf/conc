@@ -1,7 +1,7 @@
 gcons = {
     'input_path':'input/',
-    'union_ss' : ['ss_ss', 'ss_n1', 'ss_n2', 'ss_n3', 'ss_tipo', 'ss_fcr', 'ss_estado', 'ss_subestado', 'ss_fecha_creacion', 'ss_fecha_solucion', 'ss_fecha_cierre', 'ss_tienda_origen', 'ss_orden_compra', 'ss_suborden', 'ss_num_f12', 'ss_area_problema','ss_sucursal_creador', 'ss_descripcion', 'ss_solucion'],
-    'union_ss_aux' :['ss_ss_y', 'ss_n1_y', 'ss_n2_y', 'ss_n3_y', 'ss_tipo_y', 'ss_fcr_y', 'ss_estado_y', 'ss_subestado_y', 'ss_fecha_creacion_y', 'ss_fecha_solucion_y', 'ss_fecha_cierre_y', 'ss_tienda_origen_y', 'ss_orden_compra_y', 'ss_suborden_y', 'ss_num_f12_y', 'ss_area_problema_y', 'ss_sucursal_creador_y', 'ss_descripcion_y', 'ss_solucion_y'] 
+    'union_ss_aux' :['ss_ss_y', 'ss_n1_y', 'ss_n2_y', 'ss_n3_y', 'ss_tipo_y', 'ss_fcr_y', 'ss_estado_y', 'ss_subestado_y', 'ss_fecha_creacion_y', 'ss_fecha_solucion_y', 'ss_fecha_cierre_y', 'ss_tienda_origen_y', 'ss_orden_compra_y', 'ss_suborden_y', 'ss_num_f12_y', 'ss_area_problema_y', 'ss_sucursal_creador_y', 'ss_descripcion_y', 'ss_solucion_y'] ,
+    'union_tes_ntc_aux' : ['tesoreria_ntc_cod aut nc_y', 'tesoreria_ntc_ss_y', 'tesoreria_ntc_valor de devolucion_y','tesoreria_ntc_tipo de devolucion_y', 'tesoreria_ntc_estado_y' ]
 }
 
 f11_vars = {
@@ -86,4 +86,20 @@ en_vars = {
     'cnum':[ 'en_qcantida'],
     'cstring':['en_darticul' ],
     'ckeep':[ 'en_centrada','en_fcreareg', 'en_creferen', 'en_darticul',  'en_qcantida']
+}
+
+tesor_nc = {
+    'key':'tesoreria_ntc_cod aut nc',
+    'dkeys':['tesoreria_ntc_cod aut nc'],
+    'cnum':[ 'tesoreria_ntc_valor de devolucion'],
+    'cstring':['tesoreria_ntc_tipo de devolucion', 'tesoreria_ntc_estado' ],
+    'ckeep':['tesoreria_ntc_cod aut nc', 'tesoreria_ntc_ss', 'tesoreria_ntc_valor de devolucion','tesoreria_ntc_tipo de devolucion', 'tesoreria_ntc_estado' ]
+}
+
+tesor_sieb = {
+    'key':'tesoreria_sieb_ss',
+    'dkeys':['tesoreria_sieb_ss'],
+    'cnum':[ 'tesoreria_sieb_valor de devolucion'],
+    'cstring':['tesoreria_sieb_tipo de devolucion', 'tesoreria_sieb_estado' ],
+    'ckeep':['tesoreria_sieb_ss', 'tesoreria_sieb_valor de devolucion','tesoreria_sieb_tipo de devolucion', 'tesoreria_sieb_estado' ]
 }
