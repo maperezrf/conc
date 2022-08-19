@@ -5,6 +5,7 @@ from config import path
 from dics import gcons, f12_vars, f3_vars, f11_vars, nc_vars, siebel_vars, ro_vars, mc_vars, en_vars, q_vars, siebel_vars
 from os import listdir
 from unidecode import unidecode
+from datetime import datetime
 
 class CONC:
 
@@ -58,7 +59,13 @@ class CONC:
                 self.dfs[i] = clean_string(self.dfs[i], cols_string[i])
                 self.dfs[i] = delete_null_values(self.dfs[i], col_key[i])
                 self.dfs[i] = delete_duplicates(self.dfs[i], cols_dup[i])             
-            
+        
+        # Transformaciones adicionales 
+        self.dfs[2].loc[:, f12_vars['fpactada']] = pd.to_datetime(self.dfs[2][f12_vars['fpactada']], format='%Y-%m-%d')
+        cond_fpactada = (self.dfs[2][f12_vars['fpactada']]< datetime.now() )& (self.dfs[2][f12_vars['fpactada']].notna())
+        self.dfs[2].loc[cond_fpactada, f12_vars['ind_fpactada']] = 'OVERDUE'
+        self.dfs[2].loc[~cond_fpactada, f12_vars['ind_fpactada']] = 'ON TIME'
+
     def get_dfs(self):
         return self.dfs 
 
@@ -69,27 +76,44 @@ class CONC:
         df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
 
         df.loc[df[siebel_vars['key']].notna() , 'gco_ind_ss'] = 'Tiene SS'
-        df.loc[df['ss_n3'].str.contains(r'TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA', na = False), 'gco_ind_ss_n3'] = 'Se encontro TROCADO | AVERIA | INCOMPLETO | ENTREGA FALSA en SS nivel 3'
+        df.loc[df['ss_n3'].str.contains(r'TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA', na = False), 'gco_ind_ss_n3'] = 'Se encontró TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA en SS N3'
 
         total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
 
-        # ENTREGA ADMINISTRATIVA
+        # C1 ENTREGA ADMINISTRATIVA
         te_ent_admin = get_id_values(df, f12_vars['key'], f12_vars['subestado'], ['ENTREGA ADMINISTRATIVO'], total_entrega)
         mts_val = ['EN PROCESO NC', 'ENTREGADO EN TIENDA', 'FALTA STOCK', 'RETORNADO A ORIGEN', 'REFACTURACION', 'PROD CON NCRD']
-        te_ea_mts = get_id_values(df, f12_vars['key'], f12_vars['mt'], mts_val, te_ent_admin)
+        c1 = get_id_values(df, f12_vars['key'], f12_vars['mt'], mts_val, te_ent_admin)
 
-        # ENTREGAS         
+        # C2 ENTREGAS         
         entregas = ['ENTREGA POR PDA', 'ENTREGA EN SRX', 'ENTREGA PROVEEDOR']
         te_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], entregas, total_entrega)
-        te_entregas_w_reg = get_id_values(df, f12_vars['key'], 'gco_ind_entregas', ['Tiene registro RO | MC | F3 | F11 | QUIEBRE'], te_entregas)
+        c2 = get_id_values(df, f12_vars['key'], 'gco_ind_entregas', ['Tiene registro RO | MC | F3 | F11 | QUIEBRE'], te_entregas)
     
-        # NO ENTREGAS 
+        # C3 NO ENTREGAS 
         no_entregas = [ 'ENTREGA EN TIENDA','EN LINEA PRV. CON FACTURA', 'EN LINEA PRV. PEND. FACTURA', 'TOTAL ENTREGA']
         te_no_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], no_entregas, total_entrega)
-        te_no_entregas_w_ss3 = get_id_values(df, f12_vars['key'], 'gco_ind_ss', ['Tiene SS'], te_no_entregas)
+        c3 =  get_id_values(df, f12_vars['key'], 'gco_ind_ss_n3', ['Se encontró TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA en SS N3'], te_no_entregas)
+
+        # C4 ANULADO POR NCRD
+        ancdr_est = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['ANULADO X NCRD'] )
+        c4 = get_id_values(df, f12_vars['key'], f12_vars['subestado'], ['ANULADO X NCRD'], ancdr_est)
+
+        # C5 EN RUTA Y DIGITADO 
+        ## EN RUTA
+        en_ruta = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['EN RUTA'] )
+        er_se_values =['EN RUTA AL CLIENTE', 'MT PROVEEDOR', 'EN TRANSITO', 'MT']
+        er_se = get_id_values(df, f12_vars['key'], f12_vars['subestado'], er_se_values , en_ruta)
+        c5_p1 = get_id_values(df, f12_vars['key'], f12_vars['ind_fpactada'], ['OVERDUE'], er_se)
+
+        ## DIGITADO
+        digitados = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['DIGITADO'] )
+        dig_se_values =['BOLETEADO/FACTURADO', 'MT PROVEEDOR']
+        dig_se = get_id_values(df, f12_vars['key'], f12_vars['subestado'], dig_se_values, digitados)
+        c5_p2 =get_id_values(df, f12_vars['key'], f12_vars['ind_fpactada'], ['OVERDUE'], dig_se)
 
         # RESULTADO 
-        f12s_validos = te_ea_mts + te_entregas_w_reg + te_no_entregas_w_ss3
+        f12s_validos = c1 + c2 + c3 + c4 + c5_p1 + c5_p2
         return set_colvalue(df, f12_vars['key'], f12s_validos, 'gco_comment', 'Aplica conciliación')
     
     def get_join(self):

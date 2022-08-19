@@ -31,8 +31,10 @@ f12_vars = {
     'f12_origin','f12_prd_upc','f12_qproducto','f12_mprecio', 'f12_so'],
     'estado':'f12_desc_estado',
     'subestado':'f12_desc_subestado',
-    'mt':'f12_desc_mt'
-    
+    'mt':'f12_desc_mt',
+    'ind_fpactada':'gco_ind_fpactada',
+    'fpactada':'f12_dpactada'
+
 }
 
 f3_vars = {
