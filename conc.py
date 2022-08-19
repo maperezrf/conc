@@ -68,7 +68,8 @@ class CONC:
         val_entregas = df[f3_vars['key']].notna() | df[f11_vars['key']].notna() | df[mc_vars['key']].notna() | df[en_vars['key']].notna() | df[q_vars['key']].notna()
         df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
 
-        df.loc[df[siebel_vars['key']].notna() , 'gco_ind_ss_n3'] = 'Tiene SS' #TODO validar que ss sea nivel 3
+        df.loc[df[siebel_vars['key']].notna() , 'gco_ind_ss'] = 'Tiene SS'
+        df.loc[df['ss_n3'].str.contains(r'TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA', na = False), 'gco_ind_ss_n3'] = 'Se encontro TROCADO | AVERIA | INCOMPLETO | ENTREGA FALSA en SS nivel 3'
 
         total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
 
@@ -85,7 +86,7 @@ class CONC:
         # NO ENTREGAS 
         no_entregas = [ 'ENTREGA EN TIENDA','EN LINEA PRV. CON FACTURA', 'EN LINEA PRV. PEND. FACTURA', 'TOTAL ENTREGA']
         te_no_entregas = get_id_values(df, f12_vars['key'], f12_vars['subestado'], no_entregas, total_entrega)
-        te_no_entregas_w_ss3 = get_id_values(df, f12_vars['key'], 'gco_ind_ss_n3', ['Tiene SS'], te_no_entregas)
+        te_no_entregas_w_ss3 = get_id_values(df, f12_vars['key'], 'gco_ind_ss', ['Tiene SS'], te_no_entregas)
 
         # RESULTADO 
         f12s_validos = te_ea_mts + te_entregas_w_reg + te_no_entregas_w_ss3
@@ -100,8 +101,17 @@ class CONC:
         ne_ro = join( self.dfs[4], self.dfs[6],  'ro_ro', 'en_centrada', 'many_to_one') 
 
         # Inicio 
+
         f12_nc = join(self.dfs[2], self.dfs[3], ['f12_nfolio', 'f12_prd_upc'], ['nc_nfolio','nc_prod_ean_id'], 'one_to_one')
-        f12_ss = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one') # TODO No se encuentran coincidencias.
+        # Uniendo base de SS por sub orden y nro f12
+
+        f12_ss_1 = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
+        ss_x_f12 = self.dfs[8].drop_duplicates(['ss_num_f12']) 
+        f12_ss = f12_ss_1.merge(ss_x_f12, how = 'left', left_on = 'f12_nfolio',right_on = 'ss_num_f12', suffixes=('', '_y')) 
+        f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss'] ] = f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss_aux']].values
+        f12_ss.drop(columns = gcons['union_ss_aux'], inplace = True) # Se eliminan columnas de segunda Base
+
+        #Continuan unioines
         f12_ro = join(f12_ss, ne_ro, ['f12_nfolio', 'f12_prd_upc'] , ['ro_do_inicial', 'ro_upc'], 'one_to_one')
         f12_mc = join(f12_ro, self.dfs[5], 'f12_nfolio' , 'mc_entrada', 'many_to_one')
         f12_f11 = join(f12_mc, self.dfs[1], ['f12_nfolio', 'f12_prd_upc'] , ['f11_folio_f12', 'f11_upc'], 'one_to_one')

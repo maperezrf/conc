@@ -1,5 +1,7 @@
 gcons = {
-    'input_path':'input/'
+    'input_path':'input/',
+    'union_ss' : ['ss_ss', 'ss_n1', 'ss_n2', 'ss_n3', 'ss_tipo', 'ss_fcr', 'ss_estado', 'ss_subestado', 'ss_fecha_creacion', 'ss_fecha_solucion', 'ss_fecha_cierre', 'ss_tienda_origen', 'ss_orden_compra', 'ss_suborden', 'ss_num_f12', 'ss_area_problema','ss_sucursal_creador', 'ss_descripcion', 'ss_solucion'],
+    'union_ss_aux' :['ss_ss_y', 'ss_n1_y', 'ss_n2_y', 'ss_n3_y', 'ss_tipo_y', 'ss_fcr_y', 'ss_estado_y', 'ss_subestado_y', 'ss_fecha_creacion_y', 'ss_fecha_solucion_y', 'ss_fecha_cierre_y', 'ss_tienda_origen_y', 'ss_orden_compra_y', 'ss_suborden_y', 'ss_num_f12_y', 'ss_area_problema_y', 'ss_sucursal_creador_y', 'ss_descripcion_y', 'ss_solucion_y'] 
 }
 
 f11_vars = {
@@ -30,6 +32,7 @@ f12_vars = {
     'estado':'f12_desc_estado',
     'subestado':'f12_desc_subestado',
     'mt':'f12_desc_mt'
+    
 }
 
 f3_vars = {
@@ -46,8 +49,8 @@ siebel_vars = {
     'key': 'ss_suborden',
     'dkeys':['ss_suborden'],
     'cnum':[],
-    'cstring':['ss_suborden'],
-    'ckeep':['ss_ss','ss_n1','ss_n2','ss_n3','ss_tipo','ss_estado','ss_subestado','ss_fecha_creacion','ss_fecha_solucion','ss_fecha_cierre',
+    'cstring':['ss_suborden','ss_n3', 'ss_num_f12'],
+    'ckeep':['ss_ss','ss_n1','ss_n2','ss_n3','ss_tipo','ss_fcr','ss_estado','ss_subestado','ss_fecha_creacion','ss_fecha_solucion','ss_fecha_cierre',
     'ss_tienda_origen','ss_orden_compra','ss_suborden','ss_num_f12','ss_area_problema','ss_sucursal_creador','ss_descripcion','ss_solucion']
 }
 
