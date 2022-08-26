@@ -12,7 +12,7 @@ class CONC:
     dfs = []
 
     def  __init__(self) -> None:
-        dcorte = '220816' #TODO input('Ingrese corte: ')
+        dcorte = '220826' #TODO input('Ingrese corte: ')
         self.path_input = path + '/input' + '/'+ dcorte 
         self.path_output = path + '/output'
         files = listdir(self.path_input)
@@ -91,7 +91,7 @@ class CONC:
 
         # Unificacion estados, base tesoreria
         df.loc[df['tesoreria_ntc_estado'].isna(), 'tesoreria_ntc_estado'] = df.loc[df['tesoreria_ntc_estado'].isna(), 'tesoreria_sieb_estado'].values
-        df.rename(columns = {'tesoreria_ntc_estado': 'estado_tesoreria'})
+        df.rename(columns = {'tesoreria_ntc_estado': 'estado_tesoreria'}, inplace=True)
 
         # Se realizo el pago
         df.loc[((df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna()))) & (df['estado_tesoreria'] == 'PROCESADA'), 'gco_ind_registra_pago'] = 'Pago procesado'
@@ -144,7 +144,7 @@ class CONC:
         ne_ro = join( self.dfs[4], self.dfs[6],  'ro_ro', 'en_centrada', 'many_to_one') 
 
         # Inicio 
-        f12_nc = join(self.dfs[2], self.dfs[3], ['f12_nfolio', 'f12_prd_upc'], ['nc_nfolio','nc_prod_ean_id'], 'one_to_one')
+        f12_nc = join(self.dfs[2], self.dfs[3], [ f12_vars['key'] ], [nc_vars['f12']], 'many_to_one')
 
         # Uniendo base de SS por sub orden y nro f12
         f12_ss_1 = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
@@ -155,7 +155,7 @@ class CONC:
         f12_ss.drop(columns = gcons['union_ss_aux'], inplace = True) # Se eliminan columnas de segunda Base
 
         # Uniendo base tesoreria_nc por cautoriza y ss 
-        f12_tes_ntc_1 = join(f12_ss, self.dfs[9], 'nc_cautoriza_nc', 'tesoreria_ntc_cod aut nc', 'many_to_one')
+        f12_tes_ntc_1 = join(f12_ss, self.dfs[9], nc_vars['key'], 'tesoreria_ntc_cod aut nc', 'many_to_one')
         tes_ntc_x_ss = self.dfs[9].drop_duplicates(['tesoreria_ntc_ss']) 
         f12_tes_ntc = f12_tes_ntc_1.merge(tes_ntc_x_ss, how = 'left', left_on = 'ss_num_f12', right_on = 'tesoreria_ntc_ss', suffixes=('', '_y')) 
         f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), tesor_nc['ckeep']] = f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), gcons['union_tes_ntc_aux']].values
