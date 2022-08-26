@@ -14,11 +14,12 @@ f11_vars = {
 }
 
 nc_vars = {
-    'key':'nc_cautoriza_nc',
-    'dkeys':['nc_nfolio', 'nc_prod_ean_id'], # TODO: validar duplicidad debería ser por F12 y UPC 
-    'cnum':['nc_qcantidad', 'nc_monto_sku_nc'],
-    'cstring':['nc_estado_nc', 'nc_local_v_nc'],
-    'ckeep':['nc_cautoriza_nc', 'nc_sku', 'nc_qcantidad', 'nc_monto_sku_nc', 'nc_estado_nc', 'nc_local_v_nc', 'nc_nfolio', 'nc_prod_ean_id']
+    'key':'nc_cautoriza',
+    'dkeys':['nc_nfolio'], # TODO: validar duplicidad debería ser por F12 y UPC 
+    'cnum':[],
+    'cstring':[],
+    'ckeep':['nc_cautoriza', 'nc_nfolio'],
+    'f12':'nc_nfolio'
 }
 
 f12_vars = {
