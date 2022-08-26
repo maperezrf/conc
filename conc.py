@@ -31,7 +31,7 @@ class CONC:
         df = self.f12_classifier()
         print('Guardando archivos ...')
 
-        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_ind_nc', 'gco_comment']
+        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_ind_nc', 'gco_comment', 'gco_ind_btes', 'estado_tesoreria', 'gco_ind_registra_pago']
         df.to_csv(f'{self.path_output}/220817_resultado.csv', sep=';', index=False)
         #df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/220817_resultado.csv', sep=';', index=False)
         #df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/220817_resultado_v2.csv', index=False)
@@ -85,8 +85,17 @@ class CONC:
         df.loc[df[siebel_vars['key']].notna() , 'gco_ind_ss'] = 'Tiene SS'
         df.loc[df['ss_n3'].str.contains(r'TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA', na = False), 'gco_ind_ss_n3'] = 'Se encontró TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA en SS N3'
 
-        df.loc[(df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna())), 'gco_ind_registra_pago'] = 'y'
-        df.loc[df['gco_ind_registra_pago'].isna() ] = 'n'
+        # Se encontro en base tesoreria
+        df.loc[(df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna()) ), 'gco_ind_btes'] = 'La NC|SS existe en DB tesorería' 
+        df.loc[df['gco_ind_btes'].isna(), 'gco_ind_btes' ] = 'La NC|SS no existe en DB tesorería'
+
+        # Unificacion estados, base tesoreria
+        df.loc[df['tesoreria_ntc_estado'].isna(), 'tesoreria_ntc_estado'] = df.loc[df['tesoreria_ntc_estado'].isna(), 'tesoreria_sieb_estado'].values
+        df.rename(columns = {'tesoreria_ntc_estado': 'estado_tesoreria'})
+
+        # Se realizo el pago
+        df.loc[((df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna()))) & (df['estado_tesoreria'] == 'PROCESADA'), 'gco_ind_registra_pago'] = 'Pago procesado'
+        df.loc[df['gco_ind_registra_pago'].isna(), 'gco_ind_registra_pago' ] = 'Pago rechazado'
 
         total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
 
@@ -149,7 +158,8 @@ class CONC:
         f12_tes_ntc_1 = join(f12_ss, self.dfs[9], 'nc_cautoriza_nc', 'tesoreria_ntc_cod aut nc', 'many_to_one')
         tes_ntc_x_ss = self.dfs[9].drop_duplicates(['tesoreria_ntc_ss']) 
         f12_tes_ntc = f12_tes_ntc_1.merge(tes_ntc_x_ss, how = 'left', left_on = 'ss_num_f12', right_on = 'tesoreria_ntc_ss', suffixes=('', '_y')) 
-        f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), tesor_nc['ckeep']] = f12_tes_ntc.loc[(f12_ss['tesoreria_ntc_ss_y'].notna()), gcons['union_tes_ntc_aux']].values
+        f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), tesor_nc['ckeep']] = f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), gcons['union_tes_ntc_aux']].values
+
         f12_tes_ntc.drop(columns = gcons['union_tes_ntc_aux'], inplace = True) # Se eliminan columnas de segunda Base
 
         # #Continuan unioines
