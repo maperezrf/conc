@@ -74,8 +74,6 @@ class CONC:
     def f12_classifier(self):
         df = self.res.copy()
 
-        df.loc[df[nc_vars['key']].notna() , 'gco_ind_nc'] = 'Tiene NC'
-
         val_entregas = df[f3_vars['key']].notna() | df[f11_vars['key']].notna() | df[mc_vars['key']].notna() | df[en_vars['key']].notna() | df[q_vars['key']].notna()
         df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
 
@@ -140,11 +138,8 @@ class CONC:
         self.dfs[1].drop_duplicates(['f11_folio_f12', 'f11_upc'], inplace=True)
         ne_ro = join( self.dfs[4], self.dfs[6],  'ro_ro', 'en_centrada', 'many_to_one') 
 
-        # Inicio 
-        f12_nc = join(self.dfs[2], self.dfs[3], [ f12_vars['key'] ], [nc_vars['f12']], 'many_to_one')
-
         # Uniendo base de SS por sub orden y nro f12
-        f12_ss_1 = join(f12_nc, self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
+        f12_ss_1 = join(self.dfs[2], self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
         ss_x_f12 = self.dfs[8].drop_duplicates(['ss_num_f12']) 
         f12_ss = f12_ss_1.merge(ss_x_f12, how = 'left', left_on = 'f12_nfolio',right_on = 'ss_num_f12', suffixes=('', '_y')) 
         f12_ss.loc[(f12_ss['ss_ss_y'].notna()), siebel_vars['ckeep'] ] = f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss_aux']].values
