@@ -10,9 +10,10 @@ from datetime import datetime
 class CONC:
 
     dfs = []
+    dt = datetime.now().strftime('%y%m%d')
 
     def  __init__(self) -> None:
-        dcorte = '220816' #TODO input('Ingrese corte: ')
+        dcorte = input('Ingrese corte: ')
         self.path_input = path + '/input' + '/'+ dcorte 
         self.path_output = path + '/output'
         files = listdir(self.path_input)
@@ -32,9 +33,7 @@ class CONC:
         print('Guardando archivos ...')
 
         gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_ind_nc', 'gco_comment', 'gco_ind_btes', 'estado_tesoreria', 'gco_ind_registra_pago']
-        df.to_csv(f'{self.path_output}/220817_resultado.csv', sep=';', index=False)
-        #df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/220817_resultado.csv', sep=';', index=False)
-        #df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/220817_resultado_v2.csv', index=False)
+        df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/{self.dt}_resultado.csv', sep=';', index=False)
 
         print('Finalizado')
 
@@ -48,8 +47,6 @@ class CONC:
                 self.dfs.append(pd.DataFrame())
 
     def transform_files(self):
-        # PAP:  f3, f12, ro, en, siebel
-        # MAP: f11, nc, mc, quiebres 
         col_key = [f3_vars['key'], f11_vars['key'], f12_vars['key'], nc_vars['key'], ro_vars['key'], mc_vars['key'], en_vars['key'], q_vars['key'], siebel_vars['key'], tesor_nc['key'], tesor_sieb['key']]
         cols_dup = [f3_vars['dkeys'], f11_vars['dkeys'], f12_vars['dkeys'], nc_vars['dkeys'], ro_vars['dkeys'], mc_vars['dkeys'], en_vars['dkeys'], q_vars['dkeys'], siebel_vars['dkeys'], tesor_nc['dkeys'], tesor_sieb['dkeys']]
         cols_num = [f3_vars['cnum'], f11_vars['cnum'], f12_vars['cnum'], nc_vars['cnum'], ro_vars['cnum'], mc_vars['cnum'], en_vars['cnum'], q_vars['cnum'], siebel_vars['cnum'], tesor_nc['cnum'], tesor_sieb['cnum']]
