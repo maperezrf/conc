@@ -35,7 +35,8 @@ f12_vars = {
     'subestado':'f12_desc_subestado',
     'mt':'f12_desc_mt',
     'ind_fpactada':'gco_ind_fpactada',
-    'fpactada':'f12_dpactada'
+    'fpactada':'f12_dpactada',
+    'nc':'f12_cautoriza'
 
 }
 

@@ -6,6 +6,7 @@ from dics import gcons, f12_vars, f3_vars, f11_vars, nc_vars, siebel_vars, ro_va
 from os import listdir
 from unidecode import unidecode
 from datetime import datetime
+import numpy as np 
 
 class CONC:
 
@@ -32,7 +33,7 @@ class CONC:
         df = self.f12_classifier()
         print('Guardando archivos ...')
 
-        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_ind_nc', 'gco_comment', 'gco_ind_btes', 'estado_tesoreria', 'gco_ind_registra_pago']
+        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_comment', 'gco_ind_btes', 'estado_tesoreria', 'gco_ind_registra_pago']
         df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/{self.dt}_resultado.csv', sep=';', index=False)
 
         print('Finalizado')
@@ -67,6 +68,7 @@ class CONC:
         cond_fpactada = (self.dfs[2][f12_vars['fpactada']]< datetime.now() )& (self.dfs[2][f12_vars['fpactada']].notna())
         self.dfs[2].loc[cond_fpactada, f12_vars['ind_fpactada']] = 'OVERDUE'
         self.dfs[2].loc[~cond_fpactada, f12_vars['ind_fpactada']] = 'ON TIME'
+        self.dfs[2].loc[self.dfs[2][f12_vars['nc']] == '0', f12_vars['nc']] = np.nan
 
     def get_dfs(self):
         return self.dfs 
@@ -137,7 +139,7 @@ class CONC:
         self.dfs[1] = self.dfs[1].loc[~self.dfs[1]['f11_folio_f12'].isna()].reset_index(drop=True)
         self.dfs[1].drop_duplicates(['f11_folio_f12', 'f11_upc'], inplace=True)
         ne_ro = join( self.dfs[4], self.dfs[6],  'ro_ro', 'en_centrada', 'many_to_one') 
-
+        print('union 1 ')
         # Uniendo base de SS por sub orden y nro f12
         f12_ss_1 = join(self.dfs[2], self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
         ss_x_f12 = self.dfs[8].drop_duplicates(['ss_num_f12']) 
@@ -145,15 +147,15 @@ class CONC:
         f12_ss.loc[(f12_ss['ss_ss_y'].notna()), siebel_vars['ckeep'] ] = f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss_aux']].values
 
         f12_ss.drop(columns = gcons['union_ss_aux'], inplace = True) # Se eliminan columnas de segunda Base
-
+        print('union 2 ')
         # Uniendo base tesoreria_nc por cautoriza y ss 
-        f12_tes_ntc_1 = join(f12_ss, self.dfs[9], nc_vars['key'], 'tesoreria_ntc_cod aut nc', 'many_to_one')
+        f12_tes_ntc_1 = join(f12_ss, self.dfs[9], f12_vars['nc'], 'tesoreria_ntc_cod aut nc', 'many_to_one')
         tes_ntc_x_ss = self.dfs[9].drop_duplicates(['tesoreria_ntc_ss']) 
         f12_tes_ntc = f12_tes_ntc_1.merge(tes_ntc_x_ss, how = 'left', left_on = 'ss_num_f12', right_on = 'tesoreria_ntc_ss', suffixes=('', '_y')) 
         f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), tesor_nc['ckeep']] = f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), gcons['union_tes_ntc_aux']].values
 
         f12_tes_ntc.drop(columns = gcons['union_tes_ntc_aux'], inplace = True) # Se eliminan columnas de segunda Base
-
+        print('union 3 ')
         # #Continuan unioines
         f12_tes_ss = join(f12_tes_ntc, self.dfs[10], 'ss_ss', 'tesoreria_sieb_ss', 'many_to_one')
         f12_ro = join(f12_tes_ss, ne_ro, ['f12_nfolio', 'f12_prd_upc'] , ['ro_do_inicial', 'ro_upc'], 'one_to_one')
