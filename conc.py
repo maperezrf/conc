@@ -92,7 +92,7 @@ class CONC:
 
         # Se realizo el pago
         df.loc[((df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna()))) & (df['estado_tesoreria'] == 'PROCESADA'), 'gco_ind_registra_pago'] = 'Pago procesado'
-        df.loc[df['gco_ind_registra_pago'].isna(), 'gco_ind_registra_pago' ] = 'Pago rechazado'
+        df.loc[((df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna())) & (df['gco_ind_registra_pago'].isna())), 'gco_ind_registra_pago' ] = 'Pago rechazado'
 
         total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
 
@@ -196,11 +196,10 @@ def clean_num(df, col_list): # PAP
 def clean_string(df, col_list): # MAP
     res = df.copy()
     for col in col_list:
-        res[col] = res[col].fillna('nan')
-        res[col] = res[col].apply(unidecode)
-        res[col] = res[col].str.replace(r'([^a-zA-Z0-9-+(). ])', '', regex=True)
-        res[col] = res[col].str.strip()
-        res[col] = res[col].str.upper()
+        res.loc[res[col].notna(), col] = res.loc[res[col].notna(), col].apply(unidecode)
+        res.loc[res[col].notna(), col] = res.loc[res[col].notna(), col].str.replace(r'([^a-zA-Z0-9-+(). ])', '', regex=True)
+        res.loc[res[col].notna(), col] = res.loc[res[col].notna(), col].str.strip()
+        res.loc[res[col].notna(), col] = res.loc[res[col].notna(), col].str.upper()
     return res
 
 def keep_cols(df, cols_to_keep):
@@ -222,6 +221,7 @@ def get_dirs(files, file_name_list): # PAP [x]
 
 def join(df_left, df_right, col_df_left, col_df_right, val_type):
     return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right, validate=val_type)
+
 
 def innit_commandline():
     conc = CONC()
