@@ -2,11 +2,12 @@ from operator import index
 from wsgiref import validate
 import pandas as pd 
 from config import path
-from dics import gcons, f12_vars, f3_vars, f11_vars, nc_vars, siebel_vars, ro_vars, mc_vars, en_vars, q_vars, siebel_vars, tesor_nc, tesor_sieb
+from dics import gcons, f12_vars, f3_vars, f11_vars, nc_vars, siebel_vars, ro_vars, mc_vars, en_vars, q_vars, siebel_vars, tesor_nc, tesor_sieb, pos_loc, columns_res_sac_nnt_nss
 from os import listdir
 from unidecode import unidecode
 from datetime import datetime
 import numpy as np 
+pd.options.display.max_columns = 500
 
 class CONC:
 
@@ -32,10 +33,10 @@ class CONC:
         print('Clasificando archivos ...')
         df = self.f12_classifier()
         print('Guardando archivos ...')
-
-        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_comment', 'gco_ind_btes', 'estado_tesoreria', 'gco_ind_registra_pago']
-        df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/{self.dt}_resultado.csv', sep=';', index=False)
-
+        self.set_up_exit(df)
+        res = input('¿Distribuir bases? (y/n)')
+        if res == 'y':
+            self.save_results(df)
         print('Finalizado')
 
 
@@ -76,23 +77,28 @@ class CONC:
     def f12_classifier(self):
         df = self.res.copy()
 
-        val_entregas = df[f3_vars['key']].notna() | df[f11_vars['key']].notna() | df[mc_vars['key']].notna() | df[en_vars['key']].notna() | df[q_vars['key']].notna()
+        for i in pos_loc:
+            df.loc[(df['f12_gco_inc_nc'] == 'Tiene NC') & (df['f12_loc_nc'] == i) & (~df['f12_nterminal'].isin(pos_loc[i])), 'gco_ind_pos' ] = 'POS de tienda'  
+            df.loc[(df['f12_gco_inc_nc'] == 'Tiene NC') & (df['f12_loc_nc'] == i) & (df['f12_nterminal'].isin(pos_loc[i])), 'gco_ind_pos' ] = 'POS de SAC'  
+        
+
+        val_entregas = (df[f3_vars['key']].notna()) | (df[f11_vars['key']].notna()) | (df[mc_vars['key']].notna()) | (df[en_vars['key']].notna()) | (df[q_vars['key']].notna())|(df[ro_vars['key']].notna())
         df.loc[val_entregas, 'gco_ind_entregas'] = 'Tiene registro RO | MC | F3 | F11 | QUIEBRE'
 
         df.loc[df[siebel_vars['key']].notna() , 'gco_ind_ss'] = 'Tiene SS'
-        df.loc[df['ss_n3'].str.contains(r'TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA', na = False), 'gco_ind_ss_n3'] = 'Se encontró TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA en SS N3'
+        df.loc[df[siebel_vars['n3']].str.contains(r'TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSO|ENTREGA FALSA', na = False), 'gco_ind_ss_n3'] = 'Se encontró TROCADO|AVERIA|INCOMPLETO|ENTREGA FALSA en SS N3'
 
         # Se encontro en base tesoreria
-        df.loc[(df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna()) ), 'gco_ind_btes'] = 'La NC|SS existe en DB tesorería' 
+        df.loc[(df[tesor_nc['cod_aut']].notna()) | ((df[tesor_sieb['sieb_ss']].notna()) ), 'gco_ind_btes'] = 'La NC|SS existe en DB tesorería' 
         df.loc[df['gco_ind_btes'].isna(), 'gco_ind_btes' ] = 'La NC|SS no existe en DB tesorería'
 
         # Unificacion estados, base tesoreria
-        df.loc[df['tesoreria_ntc_estado'].isna(), 'tesoreria_ntc_estado'] = df.loc[df['tesoreria_ntc_estado'].isna(), 'tesoreria_sieb_estado'].values
-        df.rename(columns = {'tesoreria_ntc_estado': 'estado_tesoreria'}, inplace=True)
+        df.loc[df[tesor_nc['estado']].isna(), tesor_nc['estado']] = df.loc[df[tesor_nc['estado']].isna(), tesor_sieb['estado_sieb']].values
+        df.rename(columns = {tesor_nc['estado']: 'estado_tesoreria'}, inplace=True)
 
         # Se realizo el pago
-        df.loc[((df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna()))) & (df['estado_tesoreria'] == 'PROCESADA'), 'gco_ind_registra_pago'] = 'Pago procesado'
-        df.loc[((df['tesoreria_ntc_cod aut nc'].notna()) | ((df['tesoreria_sieb_ss'].notna())) & (df['gco_ind_registra_pago'].isna())), 'gco_ind_registra_pago' ] = 'Pago rechazado'
+        df.loc[((df[tesor_nc['cod_aut']].notna()) | ((df[tesor_sieb['sieb_ss']].notna()))) & (df['estado_tesoreria'] == 'PROCESADA'), 'gco_ind_registra_pago'] = 'Pago procesado'
+        df.loc[((df[tesor_nc['cod_aut']].notna()) | ((df[tesor_sieb['sieb_ss']].notna()))) & (df['gco_ind_registra_pago'].isna()), 'gco_ind_registra_pago' ] = 'Pago rechazado'
 
         total_entrega = get_id_values(df, f12_vars['key'], f12_vars['estado'], ['TOTAL ENTREGA'])
 
@@ -135,35 +141,104 @@ class CONC:
     def get_join(self):
         
         # Uniones previas 
-        self.dfs[1]['f11_folio_f12'] = self.dfs[1]['f11_observacion'].str.extract(r'^([1][2]\d{7,})') 
-        self.dfs[1] = self.dfs[1].loc[~self.dfs[1]['f11_folio_f12'].isna()].reset_index(drop=True)
-        self.dfs[1].drop_duplicates(['f11_folio_f12', 'f11_upc'], inplace=True)
-        ne_ro = join( self.dfs[4], self.dfs[6],  'ro_ro', 'en_centrada', 'many_to_one') 
+        self.dfs[1][f11_vars['f11_f12']] = self.dfs[1][f11_vars['observ_f11']].str.extract(r'(?!S{2} [1]-[1][2])(^[1][2]\d{7,})') 
+        self.dfs[1].loc[self.dfs[1][f11_vars['f11_f12']].isna(), f11_vars['f11_f12']] = self.dfs[1].loc[self.dfs[1][f11_vars['f11_f12']].isna(), f11_vars['observ_f11']].str.extract(r'(?!S{2} [1]-[1][2])( [1][2]\d{7,})').values
+        self.dfs[1][f11_vars['f11_f12']] = self.dfs[1][f11_vars['f11_f12']].str.strip()
+        self.dfs[1] = self.dfs[1].loc[~self.dfs[1][f11_vars['f11_f12']].isna()].reset_index(drop=True)
+        self.dfs[1].drop_duplicates([f11_vars['f11_f12'], f11_vars['upc_f11']], inplace=True)
+        ne_ro = join( self.dfs[4], self.dfs[6],  ro_vars['ro'], en_vars['centrada'], 'many_to_one') 
         print('union 1 ')
+
         # Uniendo base de SS por sub orden y nro f12
-        f12_ss_1 = join(self.dfs[2], self.dfs[8], 'f12_so', 'ss_suborden', 'many_to_one')
-        ss_x_f12 = self.dfs[8].drop_duplicates(['ss_num_f12']) 
-        f12_ss = f12_ss_1.merge(ss_x_f12, how = 'left', left_on = 'f12_nfolio',right_on = 'ss_num_f12', suffixes=('', '_y')) 
-        f12_ss.loc[(f12_ss['ss_ss_y'].notna()), siebel_vars['ckeep'] ] = f12_ss.loc[(f12_ss['ss_ss_y'].notna()), gcons['union_ss_aux']].values
-
+        f12_ss_1 = join(self.dfs[2], self.dfs[8].loc[(self.dfs[8]['ss_suborden'].notna()) & (self.dfs[8]['ss_suborden'] != 0)], f12_vars['so'], siebel_vars['sorden'], 'many_to_many')
+        ss_x_f12 = self.dfs[8].drop_duplicates([siebel_vars['f12']]) 
+        f12_ss = f12_ss_1.merge(self.dfs[8].loc[(self.dfs[8]['ss_num_f12'].notna()) & (self.dfs[8]['ss_num_f12'] != 0)], how = 'left', left_on = f12_vars['folio'],right_on = siebel_vars['f12'], suffixes=('', '_y')) 
+        f12_ss.loc[(f12_ss[siebel_vars['ss_y']].notna()), siebel_vars['ckeep'] ] = f12_ss.loc[(f12_ss[siebel_vars['ss_y']].notna()), gcons['union_ss_aux']].values
         f12_ss.drop(columns = gcons['union_ss_aux'], inplace = True) # Se eliminan columnas de segunda Base
+        f12_ss.drop_duplicates(['f12_nfolio','f12_prd_upc'], inplace=True) #TODO revisar cual ss es la verdadera del f12
         print('union 2 ')
-        # Uniendo base tesoreria_nc por cautoriza y ss 
-        f12_tes_ntc_1 = join(f12_ss, self.dfs[9], f12_vars['nc'], 'tesoreria_ntc_cod aut nc', 'many_to_one')
-        tes_ntc_x_ss = self.dfs[9].drop_duplicates(['tesoreria_ntc_ss']) 
-        f12_tes_ntc = f12_tes_ntc_1.merge(tes_ntc_x_ss, how = 'left', left_on = 'ss_num_f12', right_on = 'tesoreria_ntc_ss', suffixes=('', '_y')) 
-        f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), tesor_nc['ckeep']] = f12_tes_ntc.loc[(f12_tes_ntc['tesoreria_ntc_ss_y'].notna()), gcons['union_tes_ntc_aux']].values
 
+        # Uniendo base tesoreria_nc por cautoriza y ss 
+        f12_tes_ntc_1 = join(f12_ss, self.dfs[9], f12_vars['nc'], tesor_nc['cod_aut'], 'many_to_one')
+        tes_ntc_x_ss = self.dfs[9].drop_duplicates([tesor_nc['ntc_ss']]) 
+        f12_tes_ntc = f12_tes_ntc_1.merge(tes_ntc_x_ss, how = 'left', left_on = siebel_vars['f12'], right_on = tesor_nc['ntc_ss'], suffixes=('', '_y')) 
+        f12_tes_ntc.loc[(f12_tes_ntc[tesor_nc['ntc_ss_y']].notna()), tesor_nc['ckeep']] = f12_tes_ntc.loc[(f12_tes_ntc[tesor_nc['ntc_ss_y']].notna()), gcons['union_tes_ntc_aux']].values
         f12_tes_ntc.drop(columns = gcons['union_tes_ntc_aux'], inplace = True) # Se eliminan columnas de segunda Base
         print('union 3 ')
         # #Continuan unioines
-        f12_tes_ss = join(f12_tes_ntc, self.dfs[10], 'ss_ss', 'tesoreria_sieb_ss', 'many_to_one')
-        f12_ro = join(f12_tes_ss, ne_ro, ['f12_nfolio', 'f12_prd_upc'] , ['ro_do_inicial', 'ro_upc'], 'one_to_one')
-        f12_mc = join(f12_ro, self.dfs[5], 'f12_nfolio' , 'mc_entrada', 'many_to_one')
-        f12_f11 = join(f12_mc, self.dfs[1], ['f12_nfolio', 'f12_prd_upc'] , ['f11_folio_f12', 'f11_upc'], 'one_to_one')
-        f12_f3 = join(f12_f11, self.dfs[0], ['f12_nfolio', 'f12_prd_upc'], ['f3_folio_f12', 'f3_upc'], 'one_to_one')
-        f12_q = join(f12_f3, self.dfs[7], ['f12_nfolio', 'f12_prd_upc'], ['quiebres_f12', 'quiebres_codigo_barras'], 'one_to_one')
+        
+        f12_tes_ss = join(f12_tes_ntc, self.dfs[10], siebel_vars['ss'], tesor_sieb['sieb_ss'], 'many_to_one')
+        f12_ro = join(f12_tes_ss, ne_ro, [f12_vars['folio'], f12_vars['upc']] , [ro_vars['do_inicial'], ro_vars['upc_ro']], 'one_to_one')
+        f12_mc = join(f12_ro, self.dfs[5], f12_vars['folio'] , mc_vars['entrada_mc'], 'many_to_one')
+        f12_f11 = join(f12_mc, self.dfs[1], [f12_vars['folio'], f12_vars['upc']] , [f11_vars['f11_f12'], f11_vars['upc_f11']], 'one_to_one')
+        f12_f3 = join(f12_f11, self.dfs[0], [f12_vars['folio'], f12_vars['upc']], [f3_vars['f3_f12'], f3_vars['upc_f3']], 'one_to_one')
+        f12_q = join(f12_f3, self.dfs[7], [f12_vars['folio'], f12_vars['upc']], [q_vars['f12_q'], q_vars['q_ean']], 'one_to_one')
         return f12_q
+
+    def set_up_exit(self, df):
+        res_ant = pd.read_csv('C:/Users/maperezr/OneDrive - Falabella/General/DATA/CONC/pbi/resultado_agg.csv', sep=';', dtype='object')
+        df = df.loc[(df['f12_nfolio'].isin(res_ant['f12_nfolio'].unique())) & (df['f12_dcreacion']<'2022-07-31')]
+        locales = pd.read_csv('C:/Users/maperezr/OneDrive - Falabella/General/DATA/listado_locales.csv', dtype = 'object', usecols = ['LOC_ID','LOCAL_AGG'])
+        df = df.merge(locales, how='left', left_on = 'f12_loc_id', right_on = 'LOC_ID')
+        df.loc[df['gco_ind_ss'].isna(), 'gco_ind_ss'] = 'No tiene SS'
+        df.loc[df['gco_comment'].isna(), 'gco_comment'] = 'No aplíca conciliación'
+        gco_cols = ['gco_ind_entregas', 'gco_ind_ss', 'gco_ind_ss_n3', 'gco_comment', 'gco_ind_btes', 'estado_tesoreria', 'gco_ind_registra_pago', 'LOCAL_AGG']
+        return df 
+        # df[f12_vars['ckeep']+gco_cols].to_csv(f'{self.path_output}/{self.dt}_resultado.csv', sep=';', index=False)
+
+    def save_results(self, df):
+        df['f12_nfolio'] = pd.to_numeric(df['f12_nfolio'])
+        res_sac = pd.read_excel('C:/Users/maperezr/Downloads/pablo.xlsx', dtype='object', usecols = ['f12_nfolio', 'comentarios_resp_rev'])
+        res_sac.rename(columns={'comentarios_resp_rev':'comentarios_resp_rev_ant'}, inplace=True)
+        res_sac['f12_nfolio'] = pd.to_numeric(res_sac['f12_nfolio'])
+        nac_snc_sss =  df.loc[(df['f12_gco_inc_nc'] == 'Tiene NC') & (df['gco_comment'] == 'No aplíca conciliación') & (df['f12_desc_estado'] == 'TOTAL ENTREGA') & (df['gco_ind_ss'] == 'Tiene SS')].reset_index(drop = True)
+        nac_snc_sss = nac_snc_sss.merge(res_sac, how='left', on='f12_nfolio')
+        print('No aplica conciliacion, Tiene NC, Tiene SS')
+        print(f'F12\'s {nac_snc_sss.f12_nfolio.nunique()}')
+        print(f'SKU {nac_snc_sss.shape[0]}')
+        nac_snc_sss.to_excel(f'output/{self.dt}_e1_nac_snc_sss.xlsx', index= False)
+
+        sac_nnc = df.loc[(df['f12_gco_inc_nc'] == 'No tiene NC') & (df['gco_comment'] == 'Aplica conciliación')].reset_index(drop =True)
+        print('Aplica conciliacion, No tiene NC')
+        print(f'F12\'s {sac_nnc.f12_nfolio.nunique()}')
+        print(f'SKU {sac_nnc.shape[0]}')
+
+        sac_nnc_sss = sac_nnc.loc[(sac_nnc['gco_ind_ss'] == 'Tiene SS') & (sac_nnc['ss_fcr'] == 'N')].reset_index(drop =True)
+        print('Aplica conciliacion, No tiene NC, Tiene SS')
+        print(f'F12\'s {sac_nnc_sss.f12_nfolio.nunique()}')
+        print(f'SKU {sac_nnc_sss.shape[0]}')
+        sac_nnc_sss.to_excel(f'output/{self.dt}_e2_sac_nnc_sss.xlsx', index= False)
+
+        print('Aplica conciliacion,  No tiene NC, No tiene SS')
+        sac_nnc_nss = sac_nnc.loc[(sac_nnc['gco_ind_ss'] == 'No tiene SS')].reset_index(drop =True)
+        usr = pd.read_excel('input/220509_usr_locales (2).xlsx', usecols=['Usuario','Local agg'])
+        usr.rename(columns={'Local agg':'Local usr cierre'}, inplace = True)
+        sac_nnc = sac_nnc.reindex(columns_res_sac_nnt_nss)
+        sac_nnc_nss = sac_nnc_nss.merge(usr, how = 'left', left_on='f12_username', right_on = 'Usuario')
+        print(f'F12\'s {sac_nnc_nss.f12_nfolio.nunique()}')
+        print(f'SKU {sac_nnc_nss.shape[0]}')
+
+        sac_nnc_nss_cd =  sac_nnc_nss.loc[sac_nnc_nss['Local usr cierre'] == 'CD'].reset_index(drop =True)
+        print('Aplica conciliacion, Tiene NC, No tiene NC, CD')
+        print(f'F12\'s {sac_nnc_nss_cd.f12_nfolio.nunique()}')
+        print(f'SKU {sac_nnc_nss_cd.shape[0]}')
+        sac_nnc_nss_cd.to_excel(f'output/{self.dt}_e3_sac_nnc_nss_cd.xlsx', index= False)
+
+        sac_nnc_nss_tiendas =  sac_nnc_nss.loc[sac_nnc_nss['Local usr cierre'] == 'TIENDA'].reset_index(drop =True)
+        print('Aplica conciliacion, Tiene NC, No tiene NC, Tienda')
+        print(f'F12\'s {sac_nnc_nss_tiendas.f12_nfolio.nunique()}')
+        print(f'SKU {sac_nnc_nss_tiendas.shape[0]}')
+        sac_nnc_nss_tiendas.to_excel(f'output/{self.dt}_e4_sac_nnc_nss_tiendas.xlsx', index= False)
+
+        sac_nnc_nss_sistemas =  sac_nnc_nss.loc[sac_nnc_nss['Local usr cierre'] == 'SISTEMAS'].reset_index(drop =True)
+        print('Aplica conciliacion, Tiene NC, No tiene NC, Sistemas')
+        print(f'F12\'s {sac_nnc_nss_sistemas.f12_nfolio.nunique()}')
+        print(f'SKU {sac_nnc_nss_sistemas.shape[0]}')
+        sac_nnc_nss_sistemas.to_excel(f'output/{self.dt}_e5_sac_nnc_nss_sistemas.xlsx', index= False)
+
+def join(df_left, df_right, col_df_left, col_df_right, val_type):
+    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right, validate=val_type)
+
 
 def get_id_values(df, id_col, col, values, init_ids = []):
     todos = df[id_col].unique() if len(init_ids) == 0 else init_ids
@@ -218,10 +293,6 @@ def get_dirs(files, file_name_list): # PAP [x]
         else: 
             lista.append('')
     return lista 
-
-def join(df_left, df_right, col_df_left, col_df_right, val_type):
-    return df_left.merge(df_right, how = 'left', left_on = col_df_left, right_on = col_df_right, validate=val_type)
-
 
 def innit_commandline():
     conc = CONC()
