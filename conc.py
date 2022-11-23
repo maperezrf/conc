@@ -47,7 +47,7 @@ class CONC:
                 self.dfs.append(pd.read_csv(f'{self.path_input}/{dir}', sep=';', dtype='object'))
             else:
                 self.dfs.append(pd.DataFrame())
-
+                
     def transform_files(self):
         col_key = [f3_vars['key'], f11_vars['key'], f12_vars['key'], nc_vars['key'], ro_vars['key'], mc_vars['key'], en_vars['key'], q_vars['key'], siebel_vars['key'], tesor_nc['key'], tesor_sieb['key']]
         cols_dup = [f3_vars['dkeys'], f11_vars['dkeys'], f12_vars['dkeys'], nc_vars['dkeys'], ro_vars['dkeys'], mc_vars['dkeys'], en_vars['dkeys'], q_vars['dkeys'], siebel_vars['dkeys'], tesor_nc['dkeys'], tesor_sieb['dkeys']]

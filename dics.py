@@ -28,9 +28,9 @@ nc_vars = {
 f12_vars = {
     'key':'f12_nfolio',
     'dkeys':['f12_nfolio', 'f12_prd_upc'],
-    'cnum':['f12_qproducto','f12_mprecio'],
+    'cnum':['f12_qproducto','f12_mprecio', 'f12_mdescuento', 'f12_tprecio'],
     'cstring':[],
-    'ckeep' :['f12_nfolio', 'f12_loc_id', 'f12_loc_name', 'f12_dcreacion','f12_caja_venta','f12_secuencia_venta', 'f12_dreparto', 'f12_dpactada', 'f12_ctipo', 'f12_cvendedor', 'f12_bretira_dsp', 'f12_origin', 'f12_fpestado', 'f12_pestado', 'f12_fuestado', 'f12_desc_estado', 'f12_desc_subestado', 'f12_desc_mt', 'f12_username', 'f12_prd_upc', 'f12_qproducto', 'f12_mprecio', 'f12_tprecio', 'f12_mdescuento', 'f12_dproceso', 'f12_loc_nc', 'f12_nterminal', 'f12_nsecuencia', 'f12_monto_nc', 'f12_cautoriza', 'f12_trn_tech_key', 'f12_origin_nc', 'f12_nsuborden', 'f12_gco_inc_nc', 'f12_gco_ind_canal','f12_gco_ind_nc_inst'],
+    'ckeep' :['f12_nfolio', 'f12_loc_id', 'f12_loc_name', 'f12_dcreacion','f12_caja_venta','f12_secuencia_venta', 'f12_dreparto', 'f12_dpactada', 'f12_ctipo', 'f12_cvendedor', 'f12_bretira_dsp', 'f12_origin', 'f12_fpestado', 'f12_pestado', 'f12_fuestado', 'f12_desc_estado', 'f12_desc_subestado', 'f12_desc_mt', 'f12_username', 'f12_prd_upc', 'f12_prod_sku_id', 'f12_qproducto', 'f12_mprecio', 'f12_tprecio', 'f12_mdescuento', 'f12_dproceso', 'f12_loc_nc', 'f12_nterminal', 'f12_nsecuencia', 'f12_monto_nc', 'f12_cautoriza', 'f12_trn_tech_key', 'f12_origin_nc', 'f12_nsuborden', 'f12_gco_inc_nc', 'f12_gco_ind_canal', 'f12_gco_ind_nc_inst', 'f12_gco_ind_gift_card', 'f12_gco_ind_te'],
     'estado':'f12_desc_estado', 
     'subestado':'f12_desc_subestado', 
     'mt':'f12_desc_mt', 
@@ -87,6 +87,16 @@ q_vars = {
     'q_ean':'quiebres_codigo_barras'
 }
 
+q_man_vars = {
+    'key' : 'q_man_f12',
+    'dkeys' : ['q_man_f12', 'q_man_sku', 'q_man_unidades'],
+    'cnum' : ['q_man_unidades'],
+    'cstring' :[],
+    'ckeep' : ['q_man_fecha del quiebre' ,'q_man_f12', 'q_man_sku', 'q_man_unidades'],
+    'f12' : 'q_man_f12',
+    'sku' : 'q_man_sku'
+    }
+
 ro_vars = {
     'key':'ro_ro',
     'dkeys':['ro_do_inicial',  'ro_upc'],
@@ -95,7 +105,7 @@ ro_vars = {
     'ckeep':[ 'ro_do_inicial',  'ro_upc', 'ro_fecha_creacion_ro',  'ro_ro', 'ro_estado_ro', 'ro_cantidad_producto'],
     'ro':'ro_ro',
     'do_inicial':'ro_do_inicial',
-    'upc_ro':'ro_upc'
+    'upc_ro':'ro_upc',
 }
 
 en_vars = {    
@@ -129,34 +139,84 @@ tesor_sieb = {
     'estado_sieb':'tesoreria_sieb_estado'
 }
 
-pos_loc = {
-    '6': [ '3', '95'],
-    '13': ['14', '42', '95'],
-    '19': ['16', '30', '95'],
-    '25': ['40', '96'],
-    '30': ['96'],
-    '35': ['13', '33', '96'],
-    '36': ['95'],
-    '38': ['22', '23', '35', '36', '42', '61', '62', '63', '64', '96'],
-    '43': ['47', '96'],
-    '45': ['34', '95'],
-    '50': [ '3', '96'],
-    '53': ['95'],
-    '56': ['95'],
-    '60': [ '5', '46', '96'],
-    '72': [ '2', '38', '95'],
-    '82': ['24', '38', '95'],
-    '85': ['18', '41', '96', '97'],
-    '93': ['21', '95'],
-    '96': ['17', '96'],
-    '98': [ '4', '26', '96'],
-    '101': ['18', '28', '95', '96'],
-    '108': ['29', '33', '97'],
-    '123': ['11', '96'],
-    '131': ['96'],
-    '138': ['22', '96'],
-    '183': ['95', '96']
-}
+pos_cyc= {'6': ['3'], 
+        '35': ['13'], 
+        '53': ['15'], 
+        '60': ['46'], 
+        '93': ['21'], 
+        '96': ['22'], 
+        '101': ['28'], 
+        '123': ['47'], 
+        '131': ['13'], 
+        '183': ['38']}
+
+pos_what = {'13': ['42'],
+            '19': ['16'],
+            '25': ['40'],
+            '35': ['33'],
+            '43': ['47'],
+            '60': ['5'],
+            '72': ['2'],
+            '85': ['18'],
+            '96': ['17'],
+            '98': ['4'],
+            '101': ['18'],
+            '108': ['33']}
+            
+pos_sac = {'6': ['95'],
+        '13': ['95'],
+        '19': ['95'],
+        '25': ['96'],
+        '30': ['96'],
+        '35': ['96'],
+        '36': ['95'],
+        '38': ['96'],
+        '43': ['96'],
+        '45': ['95'],
+        '50': ['3'],
+        '53': ['95'],
+        '56': ['95'],
+        '60': ['5','96'],
+        '72': ['95'],
+        '82': ['95'],
+        '85': ['96', '97'],
+        '93': ['95'],
+        '96': ['96'],
+        '98': ['96'],
+        '101': ['95', '96'],
+        '108': ['97'],
+        '123': ['96'],
+        '131': ['96'],
+        '138': ['96'],
+        '183': ['95', '96']}
+
+tiendas = ['60',
+'45',
+'19',
+'93',
+'101',
+'38',
+'138',
+'96',
+'131',
+'25',
+'53',
+'82',
+'98',
+'56',
+'72',
+'6',
+'13',
+'50',
+'36',
+'183',
+'43',
+'108',
+'30',
+'85',
+'123',
+'18',
+'35']
 
 columns_res_sac_nnt_nss = ['f12_nfolio',
  'f12_loc_id',
