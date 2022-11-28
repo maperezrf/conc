@@ -28,9 +28,9 @@ nc_vars = {
 f12_vars = {
     'key':'f12_nfolio',
     'dkeys':['f12_nfolio', 'f12_prd_upc'],
-    'cnum':['f12_qproducto','f12_mprecio', 'f12_mdescuento', 'f12_tprecio'],
+    'cnum':['f12_qproducto','f12_mprecio', 'f12_mdescuento', 'f12_tprecio', 'f12_monto_nc'],
     'cstring':[],
-    'ckeep' :['f12_nfolio', 'f12_loc_id', 'f12_loc_name', 'f12_dcreacion','f12_caja_venta','f12_secuencia_venta', 'f12_dreparto', 'f12_dpactada', 'f12_ctipo', 'f12_cvendedor', 'f12_bretira_dsp', 'f12_origin', 'f12_fpestado', 'f12_pestado', 'f12_fuestado', 'f12_desc_estado', 'f12_desc_subestado', 'f12_desc_mt', 'f12_username', 'f12_prd_upc', 'f12_prod_sku_id', 'f12_qproducto', 'f12_mprecio', 'f12_tprecio', 'f12_mdescuento', 'f12_dproceso', 'f12_loc_nc', 'f12_nterminal', 'f12_nsecuencia', 'f12_monto_nc', 'f12_cautoriza', 'f12_trn_tech_key', 'f12_origin_nc', 'f12_nsuborden', 'f12_gco_inc_nc', 'f12_gco_ind_canal', 'f12_gco_ind_nc_inst', 'f12_gco_ind_gift_card', 'f12_gco_ind_te'],
+    'ckeep' :['f12_nfolio', 'f12_loc_id', 'f12_loc_name', 'f12_dcreacion','f12_caja_venta','f12_secuencia_venta', 'f12_dreparto', 'f12_dpactada', 'f12_ctipo', 'f12_cvendedor', 'f12_bretira_dsp', 'f12_origin', 'f12_fpestado', 'f12_pestado', 'f12_fuestado', 'f12_desc_estado', 'f12_desc_subestado', 'f12_desc_mt', 'f12_username', 'f12_prd_upc', 'f12_prod_sku_id', 'f12_qproducto', 'f12_mprecio', 'f12_tprecio', 'f12_mdescuento', 'f12_dproceso', 'f12_loc_nc', 'f12_nterminal', 'f12_nsecuencia', 'f12_monto_nc', 'f12_cautoriza', 'f12_trn_tech_key', 'f12_origin_nc', 'f12_nsuborden','f12_ccomuna', 'f12_cmatrimonio', 'f12_ctipificacion' , 'f12_gco_inc_nc', 'f12_gco_ind_canal', 'f12_gco_ind_nc_inst', 'f12_gco_ind_gift_card', 'f12_gco_ind_te'],
     'estado':'f12_desc_estado', 
     'subestado':'f12_desc_subestado', 
     'mt':'f12_desc_mt', 
@@ -121,8 +121,8 @@ tesor_nc = {
     'key':'tesoreria_ntc_cod aut nc',
     'dkeys':['tesoreria_ntc_cod aut nc'],
     'cnum':[ 'tesoreria_ntc_valor de devolucion'],
-    'cstring':['tesoreria_ntc_tipo de devolucion', 'tesoreria_ntc_estado' ],
-    'ckeep':['tesoreria_ntc_cod aut nc', 'tesoreria_ntc_ss', 'tesoreria_ntc_valor de devolucion','tesoreria_ntc_tipo de devolucion', 'tesoreria_ntc_estado' ],
+    'cstring':['tesoreria_ntc_estado' ],
+    'ckeep':['tesoreria_ntc_cod aut nc', 'tesoreria_ntc_valor de devolucion', 'tesoreria_ntc_estado' ],
     'cod_aut':'tesoreria_ntc_cod aut nc',
     'estado':'tesoreria_ntc_estado',
     'ntc_ss':'tesoreria_ntc_ss',
@@ -133,8 +133,8 @@ tesor_sieb = {
     'key':'tesoreria_sieb_ss',
     'dkeys':['tesoreria_sieb_ss'],
     'cnum':[ 'tesoreria_sieb_valor de devolucion'],
-    'cstring':['tesoreria_sieb_tipo de devolucion', 'tesoreria_sieb_estado' ],
-    'ckeep':['tesoreria_sieb_ss', 'tesoreria_sieb_valor de devolucion','tesoreria_sieb_tipo de devolucion', 'tesoreria_sieb_estado' ],
+    'cstring':['tesoreria_sieb_estado' ],
+    'ckeep':['tesoreria_sieb_ss', 'tesoreria_sieb_valor de devolucion', 'tesoreria_sieb_estado' ],
     'sieb_ss':'tesoreria_sieb_ss',
     'estado_sieb':'tesoreria_sieb_estado'
 }
